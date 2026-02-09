@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>易经速查</title>
+    <style>
+        :root {
+            --primary: #333;
+            --bg: #f5f5f7;
+            --card: #fff;
+            --accent: #007AFF;
+        }
+
+        body {
+            font-family: -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--primary);
+            margin: 0;
+            padding: 20px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        /* 搜索框设计 */
+        .search-box {
+            position: sticky;
+            top: 10px;
+            z-index: 100;
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            outline: none;
+            box-sizing: border-box;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+
+        /* 列表区域 */
+        #gua-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+        }
+
+        .gua-item {
+            background: var(--card);
+            padding: 15px 5px;
+            text-align: center;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            transition: transform 0.1s;
+        }
+
+        .gua-item:active {
+            transform: scale(0.95);
+            background: #eee;
+        }
+
+        /* 详情弹窗 */
+        #detail-view {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            z-index: 200;
+            overflow-y: auto;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #e0e0e0;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .yao-card {
+            background: var(--card);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        h2 {
+            margin-top: 0;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            margin: 0 0 10px 0;
+            color: var(--accent);
+            font-size: 1.1em;
+        }
+
+        p {
+            line-height: 1.6;
+            margin: 0;
+            color: #555;
+            white-space: pre-wrap;
+        }
+
+        /* 加载动画 */
+        #loading {
+            text-align: center;
+            color: #999;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="search-box">
+        <input type="text" id="searchInput" placeholder="🔍 搜卦名（如：乾、既济...）" oninput="filterGua()">
+    </div>
+
+    <div id="loading">数据加载中...</div>
+    <div id="gua-list"></div>
+
+    <div id="detail-view">
+        <div class="back-btn" onclick="closeDetail()">← 返回列表</div>
+        <div id="detail-content"></div>
+    </div>
+
+    <script>
+        let allData = {};
+        const guaListEl = document.getElementById('gua-list');
+
+        // 1. 获取数据
+        fetch('yi_ching.json')
+            .then(res => res.json())
+            .then(data => {
+                allData = data;
+                document.getElementById('loading').style.display = 'none';
+                renderList(Object.keys(allData));
+            })
+            .catch(err => {
+                document.getElementById('loading').innerText = "❌ 无法加载数据，请检查 yi_ching.json 是否存在";
+            });
+
+        // 2. 渲染列表
+        function renderList(keys) {
+            guaListEl.innerHTML = keys.map(key =>
+                `<div class="gua-item" onclick="openGua('${key}')">${key}</div>`
+            ).join('');
+        }
+
+        // 3. 搜索过滤
+        function filterGua() {
+            const val = document.getElementById('searchInput').value.trim();
+            const keys = Object.keys(allData).filter(k => k.includes(val));
+            renderList(keys);
+        }
+
+        // 4. 打开详情
+        function openGua(guaName) {
+            const data = allData[guaName];
+            const container = document.getElementById('detail-content');
+            let html = `<h2>${guaName}卦</h2>`;
+
+            // 遍历每一爻
+            for (const [yaoTitle, content] of Object.entries(data)) {
+                html += `
+                <div class="yao-card">
+                    <h3>${yaoTitle}</h3>
+                    <p>${content}</p>
+                </div>
+            `;
+            }
+
+            container.innerHTML = html;
+            document.getElementById('detail-view').style.display = 'block';
+            // 阻止背景滚动
+            document.body.style.overflow = 'hidden';
+        }
+
+        // 5. 关闭详情
+        function closeDetail() {
+            document.getElementById('detail-view').style.display = 'none';
+            document.body.style.overflow = 'auto';
+        }
+    </script>
+
+</body>
+
+</html>
